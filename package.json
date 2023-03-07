@@ -1,5 +1,5 @@
 {
-  "name": "appnimigration",
+  "name": "@appnificent/appnimigration",
   "version": "1.0.0",
   "description": "",
   "main": "./lib/cjs/index.js",
