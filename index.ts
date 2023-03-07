@@ -1,2 +1,3 @@
-export * from './src/migrationManager';
-export * from './src/migrationSqlBuilder';
+export * from './src/migrationManager.js';
+export * from './src/migrationSqlBuilder.js';
+export * from './src/migration.js';

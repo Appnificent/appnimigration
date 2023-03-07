@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const {Command} = require('commander');
-const {MigrationManager} = require('../lib/cjs/index');
+import { Command } from 'commander';
+import { MigrationManager } from '../lib/esm/index.mjs';
 
 const program = new Command();
 const manager = new MigrationManager();

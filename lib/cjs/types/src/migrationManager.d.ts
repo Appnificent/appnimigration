@@ -6,7 +6,7 @@ export declare class MigrationManager {
     init(): void;
     migrate(direction: 'up' | 'down'): void;
     migrateUp(migrations: string[], init?: boolean): Promise<void>;
-    migrateDown(migrations: string[]): Promise<void>;
+    migrateDown(): Promise<void>;
     generate(name: string, template?: string, init?: boolean): void;
     private generateName;
     private dateAddNull;
