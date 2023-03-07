@@ -12,11 +12,8 @@ export class MigrationManager {
   private _dir: string = './migrations';
   private _query: query = (query) => Promise.resolve([query]);
 
-  constructor() {
-    this.loadCfgFile();
-  }
-
-  init() {
+  async init() {
+    await this.loadCfgFile();
     if(!existsSync(resolve(this._dir))) {
       mkdirSync(resolve(this._dir));
     } else {
@@ -27,7 +24,8 @@ export class MigrationManager {
     this.migrateUp(migrations, true);
   }
 
-  migrate(direction: 'up' | 'down') {
+  async migrate(direction: 'up' | 'down') {
+    await this.loadCfgFile();
     if(!existsSync(resolve(this._dir))) {
       this.error('No folder with migrations found!');
     }
@@ -70,7 +68,8 @@ export class MigrationManager {
     process.exit();
   }
 
-  generate(name: string, template: string = 'migration-template.js', init = false) {
+  async generate(name: string, template: string = 'migration-template.js', init = false) {
+    await this.loadCfgFile();
     let fileName = this.generateName(name);
     if(init) {
       fileName = 'init';

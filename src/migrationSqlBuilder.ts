@@ -292,6 +292,7 @@ export class MigrationCommand {
     `
   }
 
+  //TODO: Drop also column constraints
   private _getDropColumnSql(def: ColumnDefinition) {
     return `ALTER TABLE ${this._table} DROP COLUMN ${def.getName()};`;
   }
