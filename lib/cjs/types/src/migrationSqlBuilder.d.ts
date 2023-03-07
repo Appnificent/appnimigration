@@ -15,6 +15,7 @@ export declare class ColumnDefinition {
     get bit(): ColumnDefinition & MigrationCommand;
     get int(): ColumnDefinition & MigrationCommand;
     get datetime2(): ColumnDefinition & MigrationCommand;
+    get isDefault(): string | undefined;
     get migrationCommand(): MigrationCommand;
     default(val: string): ColumnDefinition & MigrationCommand;
     type(val: string): ColumnDefinition & MigrationCommand;

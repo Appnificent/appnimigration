@@ -49,6 +49,10 @@ export class ColumnDefinition {
     return this.getProxy();
   }
 
+  get isDefault() {
+    return this._default;
+  }
+
   get migrationCommand() {
     return this._migrationCommand;
   }
@@ -292,9 +296,22 @@ export class MigrationCommand {
     `
   }
 
-  //TODO: Drop also column constraints
   private _getDropColumnSql(def: ColumnDefinition) {
-    return `ALTER TABLE ${this._table} DROP COLUMN ${def.getName()};`;
+    const queries: string[] = [];
+    if(def.isDefault) {
+      queries.push(`
+        DECLARE @ConstraintName nvarchar(255), @SQL nvarchar(2000);
+        SELECT @ConstraintName = dc.name
+        FROM sys.default_constraints AS DC
+        LEFT JOIN sys.objects AS O ON O.object_id = DC.parent_object_id
+        LEFT JOIN sys.columns c ON o.object_id = c.object_id AND DC.parent_column_id = c.column_id
+        WHERE O.name = '${this._table}' AND C.name = '${def.getName()}';
+        SET @SQL = 'ALTER TABLE ${this._table} DROP CONSTRAINT ' + @ConstraintName;
+        EXEC(@SQL);
+      `);
+    }
+    queries.push(`ALTER TABLE ${this._table} DROP COLUMN ${def.getName()};`);
+    return queries.join('\n');
   }
 
   private _getDropKeySql(def: KeyDefinition | string) {
