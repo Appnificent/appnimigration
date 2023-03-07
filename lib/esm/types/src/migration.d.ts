@@ -12,7 +12,7 @@ interface IMigrationQuery {
 }
 export declare class Migration {
     private _migrationCommand;
-    constructor(migrationCommand: MigrationCommand | IMigrationQuery);
+    constructor(migrationCommand: MigrationCommand & IMigrationQuery);
     up(query: query): Promise<void>;
     down(query: query): Promise<void>;
 }

@@ -12,14 +12,14 @@ interface IMigrationQuery {
   }
 }
 export class Migration {
-  private _migrationCommand: MigrationCommand | IMigrationQuery;
+  private _migrationCommand: MigrationCommand & IMigrationQuery;
 
-  constructor(migrationCommand: MigrationCommand | IMigrationQuery) {
+  constructor(migrationCommand: MigrationCommand & IMigrationQuery) {
     this._migrationCommand = migrationCommand;
   }
 
   async up(query: query) {
-    if(this._migrationCommand instanceof MigrationCommand) {
+    if(this._migrationCommand.getUpSql) {
       await query(this._migrationCommand.getUpSql())
     } else {
       await query(this._migrationCommand.up.query, this._migrationCommand.up.binds);
@@ -27,7 +27,7 @@ export class Migration {
   }
 
   async down(query: query) {
-    if(this._migrationCommand instanceof MigrationCommand) {
+    if(this._migrationCommand.getDownSql) {
       await query(this._migrationCommand.getDownSql());
     } else {
       await query(this._migrationCommand.down.query, this._migrationCommand.down.binds);
