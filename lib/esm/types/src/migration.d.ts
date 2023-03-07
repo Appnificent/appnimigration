@@ -1,5 +1,5 @@
 import { query } from './migrationManager';
-import { MigrationCommand } from './migrationSqlBuilder';
+import { MigrationCommand } from './migrationSqlBuilder.js';
 interface IMigrationQuery {
     up: {
         query: string;
