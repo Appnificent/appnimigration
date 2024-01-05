@@ -11,7 +11,7 @@ export default class MigrationBase {
     try {
       const cfg = await loadCfgFile();
       this._query = cfg.query;
-      this._databaseType = cfg.database.strToLower();
+      this._databaseType = cfg.database.toLowerCase();
       if(cfg.dir) {
         this._dir = cfg.dir;
       }
