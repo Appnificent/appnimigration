@@ -185,9 +185,13 @@ export class KeyDefinition extends MigrationBase {
     return this._migrationCommand;
   }
 
-  foreign(cols: string[], references: string) {
+  foreign(cols: string | string[], references: string) {
     this._keyType = 'FOREIGN KEY';
-    this._cols = cols;
+    if(Array.isArray(cols)) {
+      this._cols = cols;
+    } else {
+      this._cols.push(cols);
+    }
     this._references = references;
     return this.getProxy();
   }
