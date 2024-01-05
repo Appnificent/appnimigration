@@ -331,8 +331,8 @@ export class MigrationCommand extends MigrationBase {
     return `
         CREATE TABLE IF NOT EXISTS ${this._table} (
           ${this._getCreateCols()}
+          ${this._createConstraintsSql()}
         );
-      ${this._createKeysSql()}
     `;
   }
 
@@ -410,6 +410,18 @@ export class MigrationCommand extends MigrationBase {
         queries.push(this._getAlterAddConstraintSql(key));
       } else {
         queries.push(this._getAlterAddConstraintSql(key.up));
+      }
+    }
+    return queries.join('\n');
+  }
+
+  private _createConstraintsSql() {
+    const queries: string[] = [];
+    for(let key of this._keys) {
+      if(key instanceof KeyDefinition) {
+        queries.push('CONSTRAINT ' + this._getAlterAddConstraintSql(key));
+      } else {
+        queries.push('CONSTRAINT ' + this._getAlterAddConstraintSql(key.up));
       }
     }
     return queries.join('\n');
