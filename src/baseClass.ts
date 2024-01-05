@@ -3,7 +3,7 @@ import { loadCfgFile } from "./helpers";
 import { query } from './migrationManager';
 
 export default class MigrationBase {
-  protected _databaseType: "mysql" | "mssql";
+  protected _databaseType?: "mysql" | "mssql";
   protected _dir: string = './migrations';
   protected _query: query = (query) => Promise.resolve([query]);
 
@@ -15,7 +15,7 @@ export default class MigrationBase {
       if(cfg.dir) {
         this._dir = cfg.dir;
       }
-    } catch(err) {
+    } catch(err: any) {
       this.error(err.message);
     }
   }

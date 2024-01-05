@@ -1,8 +1,15 @@
 import { existsSync } from "fs";
 import { join } from "path";
 import { pathToFileURL } from "url";
+import { query } from "./migrationManager";
 
-let cfgCache;
+export interface Config {
+  _databaseType?: "mysql" | "mssql";
+  _dir?: string;
+  _query: query;
+}
+
+let cfgCache: Config;
 
 export async function loadCfgFile() {
   if(cfgCache) return cfgCache;

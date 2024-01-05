@@ -11,14 +11,9 @@ export type query = (query: string, bind?: any) => Promise<Array<any>>;
 const packageDirectory = resolve('node_modules/@appnificent/appnimigration');
 
 export class MigrationManager extends MigrationBase {
-  private _database;
-
-  get databaseType(): string {
-    return this._database;
-  }
 
   private get _migrationQueries(): MigrationQueries {
-    return migrationManagerQueries[this._databaseType];
+    return migrationManagerQueries[this._databaseType || 'mysql'];
   }
 
   async init() {
