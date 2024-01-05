@@ -213,9 +213,10 @@ export class KeyDefinition extends MigrationBase {
     return `${this.getName()} ${this._keyType} (${this._cols.join(',')}) ${this._references ? `REFERENCES ${this._references}` : ''} ${this._keyType === 'FOREIGN KEY' ? 'ON UPDATE NO ACTION ON DELETE NO ACTION' : ''}`;
   }
 
+  //TODO: Improve handling reference in the name
   getName() {
     if(this._name) return this._name;
-    return `fk_${this._cols.join('_')}_${this._references}`
+    return `fk_${this._cols.join('_')}_${this._references?.replace('(', '_').replace(')', '')}`
   }
 
   getProxy(): KeyDefinition & MigrationCommand {
