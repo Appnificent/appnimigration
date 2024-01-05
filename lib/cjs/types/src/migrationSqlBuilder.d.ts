@@ -1,28 +1,38 @@
-export declare class ColumnDefinition {
+import MigrationBase from "./baseClass";
+export declare const CURRENT_DATE = "NOW";
+export declare class ColumnDefinition extends MigrationBase {
     private _name?;
     private _columnType?;
     private _nullable;
     private _default?;
     private _primary;
     private _unique;
+    private _autoincrement;
     private _references?;
     private _migrationCommand;
     constructor(name: string, migrationCommand: MigrationCommand);
     get nullable(): ColumnDefinition & MigrationCommand;
     get primary(): ColumnDefinition & MigrationCommand;
     get unique(): ColumnDefinition & MigrationCommand;
+    get autoincrement(): ColumnDefinition & MigrationCommand;
     get uuid(): ColumnDefinition & MigrationCommand;
     get bit(): ColumnDefinition & MigrationCommand;
     get int(): ColumnDefinition & MigrationCommand;
+    get datetime(): ColumnDefinition & MigrationCommand;
+    /** @deprecated */
     get datetime2(): ColumnDefinition & MigrationCommand;
     get isDefault(): string | undefined;
     get migrationCommand(): MigrationCommand;
-    default(val: string): ColumnDefinition & MigrationCommand;
+    default(val: string | number): ColumnDefinition & MigrationCommand;
     type(val: string): ColumnDefinition & MigrationCommand;
+    string(length: number): ColumnDefinition & MigrationCommand;
     addReference(val: string): ColumnDefinition & MigrationCommand;
     generate(): string;
+    generateMssql(): string;
+    generateMysql(): string;
     getProxy(): ColumnDefinition & MigrationCommand;
     getName(): string | undefined;
+    private processDefaultValue;
 }
 export declare class KeyDefinition {
     private _name;
@@ -40,7 +50,7 @@ export declare class KeyDefinition {
     getName(): string;
     getProxy(): KeyDefinition & MigrationCommand;
 }
-export declare class MigrationCommand {
+export declare class MigrationCommand extends MigrationBase {
     private _columnDefinitions;
     private _type;
     private _table;
@@ -61,6 +71,8 @@ export declare class MigrationCommand {
     private _getCreateCols;
     private _getCreateSql;
     private _getCreateNotExistsSql;
+    private _getCreateNotExistsMSSql;
+    private _getCreateNotExistMySql;
     private _getAlterSql;
     private _getAlterAddColumnSql;
     private _getAlterAddConstraintSql;
