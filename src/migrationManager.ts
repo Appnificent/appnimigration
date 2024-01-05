@@ -3,14 +3,23 @@ import { join, resolve } from "path";
 import slugify from 'slugify';
 import chalk from 'chalk';
 import { pathToFileURL } from "url";
+import MigrationBase from "./baseClass";
+import migrationManagerQueries, { MigrationQueries } from "./migrationManagerQueries";
 
 export type query = (query: string, bind?: any) => Promise<Array<any>>;
 
 const packageDirectory = resolve('node_modules/@appnificent/appnimigration');
 
-export class MigrationManager {
-  private _dir: string = './migrations';
-  private _query: query = (query) => Promise.resolve([query]);
+export class MigrationManager extends MigrationBase {
+  private _database;
+
+  get databaseType(): string {
+    return this._database;
+  }
+
+  private get _migrationQueries(): MigrationQueries {
+    return migrationManagerQueries[this._databaseType];
+  }
 
   async init() {
     await this.loadCfgFile();
@@ -40,14 +49,14 @@ export class MigrationManager {
   async migrateUp(migrations: string[], init = false) {
     let migratedFiles: string[] = [];
     if(!init) {
-      const existingMigrationsRes = await this._query("SELECT * FROM __AppMigrations");
+      const existingMigrationsRes = await this._query(this._migrationQueries.existingMigrationsQuery);
       migratedFiles = existingMigrationsRes.map<string>(val => val.Name);
     }
     for(let migrationFile of migrations) {
       if(migratedFiles.includes(migrationFile)) continue;
       const migration = (await import(pathToFileURL(join(resolve(this._dir), migrationFile)).toString())).default;
       await migration.up(this._query);
-      await this._query('INSERT INTO __AppMigrations([Name], [DateTime]) VALUES(@name, GETDATE())', {name: migrationFile});
+      await this._query(this._migrationQueries.insertMigrationQuery, {name: migrationFile});
     }
 
     console.log(chalk.green('Successfully migrated!'));
@@ -55,13 +64,13 @@ export class MigrationManager {
   }
 
   async migrateDown() {
-    const lastMigrationDateRes = await this._query('SELECT TOP 1 [DateTime] FROM __AppMigrations ORDER BY [DateTime] DESC') as {DateTime: string}[];
-    const latestMigrations = await this._query('SELECT * FROM __AppMigrations WHERE [DateTime] = @lastDateTime', {lastDateTime: lastMigrationDateRes[0].DateTime}) as {DateTime: string, Name: string}[];
+    const lastMigrationDateRes = await this._query(this._migrationQueries.lastMigrationDateQuery) as {DateTime: string}[];
+    const latestMigrations = await this._query(this._migrationQueries.latestMigrationsQuery, {lastDateTime: lastMigrationDateRes[0].DateTime}) as {DateTime: string, Name: string}[];
     if(latestMigrations[0].Name !== 'init.ts') {
       for(let migration of latestMigrations) {
         const migrationModel = (await import(pathToFileURL(join(resolve(this._dir), migration.Name)).toString())).default;
         await migrationModel.down(this._query);
-        await this._query('DELETE FROM __AppMigrations WHERE [Name] = @name', {name: migration.Name});
+        await this._query(this._migrationQueries.deleteMigrationQuery, {name: migration.Name});
       }
     }
     console.log(chalk.green('Database was successfully migrated down!'));
@@ -85,30 +94,5 @@ export class MigrationManager {
 
   private dateAddNull(val: string | number) {
     return ('0' + val).slice(-2);
-  }
-
-  private async loadCfgFile() {
-    if(!existsSync(join(process.cwd(), 'appnimigration.config.js'))) {
-      this.error('No configuration file found! Make sure that appnimigration.config.js file exists in the root of the project!');
-    }
-
-    const cfg = await import(pathToFileURL(join(process.cwd(), 'appnimigration.config.js')).toString());
-    if(!cfg) {
-      this.error('Config file has not default export!');
-    }
-
-    if(!cfg.query) {
-      this.error('Config file does not include query function!');
-    }
-    this._query = cfg.query;
-    
-    if(cfg.dir) {
-      this._dir = cfg.dir;
-    }
-  }
-
-  private error(msg: string) {
-    console.log(chalk.red(msg));
-    process.exit();
   }
 }

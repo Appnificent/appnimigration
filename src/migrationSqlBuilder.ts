@@ -1,16 +1,23 @@
-export class ColumnDefinition {
+import MigrationBase from "./baseClass";
+
+export const CURRENT_DATE = 'NOW';
+
+export class ColumnDefinition extends MigrationBase {
   private _name?: string;
   private _columnType?: string;
   private _nullable: boolean = false;
   private _default?: string;
   private _primary: boolean = false;
   private _unique: boolean = false;
+  private _autoincrement: boolean = false;
   private _references?: string;
   private _migrationCommand: MigrationCommand;
 
   constructor(name: string, migrationCommand: MigrationCommand) {
+    super();
     this._name = name;
     this._migrationCommand = migrationCommand;
+    this.loadCfgFile();
     return this.getProxy();
   }
 
@@ -29,8 +36,13 @@ export class ColumnDefinition {
     return this.getProxy();
   }
 
+  get autoincrement() {
+    this._autoincrement = true;
+    return this.getProxy();
+  }
+
   get uuid() {
-    this.type('uniqueidentifier');
+    this.type(this._databaseType === 'mssql' ? 'uniqueidentifier' : 'varchar(64)');
     return this.getProxy();
   }
 
@@ -44,6 +56,12 @@ export class ColumnDefinition {
     return this.getProxy();
   }
 
+  get datetime() {
+    this.type(this._databaseType === 'mssql' ? 'datetime2' : 'datetime');
+    return this.getProxy();
+  }
+
+  /** @deprecated */
   get datetime2() {
     this.type('datetime2');
     return this.getProxy();
@@ -57,13 +75,18 @@ export class ColumnDefinition {
     return this._migrationCommand;
   }
 
-  default(val: string) {
-    this._default = val;
+  default(val: string | number) {
+    this._default = this.processDefaultValue(val);
     return this.getProxy();
   }
 
   type(val: string) {
     this._columnType = val;
+    return this.getProxy();
+  }
+
+  string(length: number) {
+    this._columnType = `${this._databaseType === 'mssql' ? 'nvarchar' : 'varchar'}(${length})`;
     return this.getProxy();
   }
 
@@ -74,11 +97,28 @@ export class ColumnDefinition {
   }
 
   generate(): string {
+    return this._databaseType === 'mssql' ? this.generateMssql() : this.generateMysql();
+  }
+
+  generateMssql(): string {
     return `[${this._name}] ${this._columnType}
               ${this._nullable ? 'NULL' : 'NOT NULL'}
               ${this._default ? `DEFAULT ${this._default}` : ''}
+              ${this._autoincrement ? 'IDENTITY' : ''}
               ${this._primary ? 'PRIMARY KEY' : ''}
               ${this._unique && !this._primary ? 'UNIQUE KEY' : ''}
+              ${this._references ? `REFERENCES ${this._references}` : ''}
+            `;
+  }
+
+  //TODO: This primary key is not going to work for mysql, it has to be added at the end of the create table cols PRIMARY KEY (column)
+  generateMysql(): string {
+    return `\`${this._name}\` ${this._columnType}
+              ${this._nullable ? 'NULL' : 'NOT NULL'}
+              ${this._default ? `DEFAULT ${this._default}` : ''}
+              ${this._autoincrement ? 'AUTO_INCREMENT' : ''}
+              ${this._unique && !this._primary ? 'UNIQUE KEY' : ''}
+              ${this._primary ? 'PRIMARY KEY' : ''}
               ${this._references ? `REFERENCES ${this._references}` : ''}
             `;
   }
@@ -102,6 +142,13 @@ export class ColumnDefinition {
 
   getName() {
     return this._name;
+  }
+
+  private processDefaultValue(val: any): any {
+    if(val === CURRENT_DATE) {
+      return this._databaseType === 'mssql' ? 'GETDATE()' : 'NOW()';
+    }
+    return val;
   }
 }
 
@@ -170,13 +217,14 @@ export class KeyDefinition {
   }
 }
 
-export class MigrationCommand {
+export class MigrationCommand extends MigrationBase {
   private _columnDefinitions: Array<{up: string, down: string} | ColumnDefinition> = [];
   private _type: 'create' | 'createNotExists' | 'alter';
   private _table: string;
   private _keys: Array<{up: string, down: string} | KeyDefinition> = [];
 
   constructor(type: 'create' | 'createNotExists' | 'alter', table: string) {
+    super();
     this._type = type;
     this._table = table;
   }
@@ -222,6 +270,8 @@ export class MigrationCommand {
     return this;
   }
 
+  //TODO: Add rename key option, alter column (MSSQL) and modify column (MySQL)
+
   private _getCreateCols(): string {
     const colDefs: string[] = [];
     for(let def of this._columnDefinitions) {
@@ -242,9 +292,22 @@ export class MigrationCommand {
   }
 
   private _getCreateNotExistsSql() {
+    return this._databaseType === 'mssql' ? this._getCreateNotExistsMSSql() : this._getCreateNotExistMySql();
+  }
+
+  private _getCreateNotExistsMSSql() {
     return `
       IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='${this._table}' and xtype='U')
         CREATE TABLE ${this._table} (
+          ${this._getCreateCols()}
+        );
+      ${this._createKeysSql()}
+    `;
+  }
+
+  private _getCreateNotExistMySql() {
+    return `
+        CREATE TABLE IF NOT EXISTS ${this._table} (
           ${this._getCreateCols()}
         );
       ${this._createKeysSql()}
@@ -298,7 +361,7 @@ export class MigrationCommand {
 
   private _getDropColumnSql(def: ColumnDefinition) {
     const queries: string[] = [];
-    if(def.isDefault) {
+    if(def.isDefault && this._databaseType === 'mssql') {
       queries.push(`
         DECLARE @ConstraintName nvarchar(255), @SQL nvarchar(2000);
         SELECT @ConstraintName = dc.name
@@ -315,7 +378,7 @@ export class MigrationCommand {
   }
 
   private _getDropKeySql(def: KeyDefinition | string) {
-    return `ALTER TABLE ${this._table} DROP KEY ${typeof def === 'string' ? def : def.getName()};`;
+    return `ALTER TABLE ${this._table} DROP ${this._databaseType === 'mssql' ? 'KEY' : 'INDEX'} ${typeof def === 'string' ? def : def.getName()};`;
   }
 
   private _createKeysSql() {
