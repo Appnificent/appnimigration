@@ -335,7 +335,7 @@ export class MigrationCommand extends MigrationBase {
   private _getCreateNotExistMySql() {
     return `
         CREATE TABLE IF NOT EXISTS ${this._table} (
-          ${this._getCreateCols()}
+          ${this._getCreateCols()},
           ${this._createConstraintsSql()}
         );
     `;
@@ -433,7 +433,7 @@ export class MigrationCommand extends MigrationBase {
         queries.push(this._getConstraintSql(key.up));
       }
     }
-    return queries.join('\n');
+    return queries.join(',\n');
   }
 
   private _dropKeysSql() {
