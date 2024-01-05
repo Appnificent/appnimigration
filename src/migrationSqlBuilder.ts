@@ -359,8 +359,12 @@ export class MigrationCommand extends MigrationBase {
     return `ALTER TABLE ${this._table} ADD ${def.generate()};`;
   }
 
+  private _getConstraintSql(def: KeyDefinition | string) {
+    return `CONSTRAINT ${typeof def === 'string' ? def : def.generate()}`;
+  }
+
   private _getAlterAddConstraintSql(def: KeyDefinition | string) {
-    return `ALTER TABLE ${this._table} ADD CONSTRAINT ${typeof def === 'string' ? def : def.generate()};`;
+    return `ALTER TABLE ${this._table} ADD ${this._getConstraintSql(def)};`;
   }
 
   private _getDropSql() {
@@ -423,9 +427,9 @@ export class MigrationCommand extends MigrationBase {
     const queries: string[] = [];
     for(let key of this._keys) {
       if(key instanceof KeyDefinition) {
-        queries.push('CONSTRAINT ' + this._getAlterAddConstraintSql(key));
+        queries.push(this._getConstraintSql(key));
       } else {
-        queries.push('CONSTRAINT ' + this._getAlterAddConstraintSql(key.up));
+        queries.push(this._getConstraintSql(key.up));
       }
     }
     return queries.join('\n');
