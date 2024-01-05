@@ -30,7 +30,7 @@
     ".": {
       "import": {
         "types": "./lib/cjs/types/index.d.ts",
-        "default": "./lib/cjs/index.mjs"
+        "default": "./lib/cjs/index.js"
       },
       "require": {
         "types": "./lib/cjs/types/index.d.ts",
