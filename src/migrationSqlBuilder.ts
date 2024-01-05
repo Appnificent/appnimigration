@@ -71,6 +71,10 @@ export class ColumnDefinition extends MigrationBase {
     return this._default;
   }
 
+  get isPrimary() {
+    return this._primary;
+  }
+
   get migrationCommand() {
     return this._migrationCommand;
   }
@@ -111,7 +115,6 @@ export class ColumnDefinition extends MigrationBase {
             `;
   }
 
-  //TODO: This primary key is not going to work for mysql, it has to be added at the end of the create table cols PRIMARY KEY (column)
   generateMysql(): string {
     return `\`${this._name}\` ${this._columnType}
               ${this._nullable ? 'NULL' : 'NOT NULL'}
@@ -140,6 +143,7 @@ export class ColumnDefinition extends MigrationBase {
     });
   }
 
+  //TODO: Escape it
   getName() {
     return this._name;
   }
@@ -152,14 +156,15 @@ export class ColumnDefinition extends MigrationBase {
   }
 }
 
-export class KeyDefinition {
-  private _name: string;
+export class KeyDefinition extends MigrationBase {
+  private _name?: string;
   private _keyType?: string;
   private _cols: string[] = [];
   private _references?: string;
   private _migrationCommand: MigrationCommand;
 
-  constructor(name: string, migrationCommand: MigrationCommand) {
+  constructor(migrationCommand: MigrationCommand, name?: string) {
+    super();
     this._name = name;
     this._migrationCommand = migrationCommand;
     return this.getProxy();
@@ -192,11 +197,20 @@ export class KeyDefinition {
   }
 
   generate() {
-    return `${this._name} ${this._keyType} (${this._cols.join(',')}) ${this._references ? `REFERENCES ${this._references}` : ''}`;
+    return this._databaseType === 'mssql' ? this.generateMSSql() : this.generateMySql();
+  }
+
+  generateMSSql() {
+    return `${this.getName()} ${this._keyType} (${this._cols.join(',')}) ${this._references ? `REFERENCES ${this._references}` : ''}`;
+  }
+
+  generateMySql() {
+    return `${this.getName()} ${this._keyType} (${this._cols.join(',')}) ${this._references ? `REFERENCES ${this._references}` : ''} ${this._keyType === 'FOREIGN KEY' ? 'ON UPDATE NO ACTION ON DELETE NO ACTION' : ''}`;
   }
 
   getName() {
-    return this._name;
+    if(this._name) return this._name;
+    return `fk_${this._cols.join('_')}_${this._references}`
   }
 
   getProxy(): KeyDefinition & MigrationCommand {
@@ -259,8 +273,8 @@ export class MigrationCommand extends MigrationBase {
     return this;
   }
 
-  addKey(name: string): KeyDefinition & MigrationCommand {
-    const key = new KeyDefinition(name, this);
+  addKey(name?: string): KeyDefinition & MigrationCommand {
+    const key = new KeyDefinition(this, name);
     this._keys.push(key);
     return key as KeyDefinition & MigrationCommand;
   }
@@ -274,12 +288,19 @@ export class MigrationCommand extends MigrationBase {
 
   private _getCreateCols(): string {
     const colDefs: string[] = [];
+    let primaries: string[] = [];
     for(let def of this._columnDefinitions) {
       if(def instanceof ColumnDefinition) {
         colDefs.push(def.generate());
+        if(def.isPrimary && def.getName()) {
+          primaries.push(def.getName() as string);
+        }
       } else {
         colDefs.push(def.up);
       }
+    }
+    if(this._databaseType === 'mysql' && primaries.length > 0) {
+      colDefs.push(`PRIMARY KEY (${primaries.join(', ')})`);
     }
     return colDefs.join(',\n');
   }
