@@ -156,6 +156,7 @@ export class ColumnDefinition extends MigrationBase {
   }
 }
 
+//TODO: Allow creating keys with different on update and on delete
 export class KeyDefinition extends MigrationBase {
   private _name?: string;
   private _keyType?: string;
