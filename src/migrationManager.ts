@@ -79,7 +79,7 @@ export class MigrationManager extends MigrationBase {
       fileName = 'init';
     }
     const templateFull = readFileSync(join(packageDirectory, '/lib/', template), {encoding: 'utf8'});
-    writeFileSync(join(resolve(this._dir), fileName + '.mjs'), templateFull);
+    writeFileSync(join(resolve(this._dir), fileName + '.js'), templateFull);
   }
 
   private generateName(name: string) {
