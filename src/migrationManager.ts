@@ -59,8 +59,9 @@ export class MigrationManager extends MigrationBase {
   }
 
   async migrateDown() {
-    const lastMigrationDateRes = await this._query(this._migrationQueries.lastMigrationDateQuery) as {DateTime: string}[];
-    const latestMigrations = await this._query(this._migrationQueries.latestMigrationsQuery, {lastDateTime: lastMigrationDateRes[0].DateTime}) as {DateTime: string, Name: string}[];
+    const lastMigrationDateRes = await this._query(this._migrationQueries.lastMigrationDateQuery) as {DateTime: Date}[];
+    //TODO: Convert date to DB
+    const latestMigrations = await this._query(this._migrationQueries.latestMigrationsQuery, {lastDateTime: lastMigrationDateRes[0].DateTime.toISOString().replace('T', ' ').replace('Z', '')}) as {DateTime: string, Name: string}[];
     if(latestMigrations[0].Name !== 'init.ts') {
       for(let migration of latestMigrations) {
         const migrationModel = (await import(pathToFileURL(join(resolve(this._dir), migration.Name)).toString())).default;
