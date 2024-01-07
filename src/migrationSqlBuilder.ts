@@ -79,7 +79,7 @@ export class ColumnDefinition extends MigrationBase {
     return this._migrationCommand;
   }
 
-  default(val: string | number) {
+  default(val: string) {
     this._default = this.processDefaultValue(val);
     return this.getProxy();
   }
@@ -121,7 +121,6 @@ export class ColumnDefinition extends MigrationBase {
               ${this._default ? `DEFAULT ${this._default}` : ''}
               ${this._autoincrement ? 'AUTO_INCREMENT' : ''}
               ${this._unique && !this._primary ? 'UNIQUE KEY' : ''}
-              ${this._primary ? 'PRIMARY KEY' : ''}
               ${this._references ? `REFERENCES ${this._references}` : ''}
             `;
   }
@@ -166,6 +165,7 @@ export class KeyDefinition extends MigrationBase {
 
   constructor(migrationCommand: MigrationCommand, name?: string) {
     super();
+    this.loadCfgFile();
     this._name = name;
     this._migrationCommand = migrationCommand;
     return this.getProxy();
@@ -245,6 +245,7 @@ export class MigrationCommand extends MigrationBase {
 
   constructor(type: 'create' | 'createNotExists' | 'alter', table: string) {
     super();
+    this.loadCfgFile();
     this._type = type;
     this._table = table;
   }
@@ -369,6 +370,7 @@ export class MigrationCommand extends MigrationBase {
   }
 
   private _getDropSql() {
+    if(this._databaseType === 'mysql') return `DROP TABLE ${this._table};`;
     return `
       ${this._dropKeysSql()}
       DROP TABLE ${this._table};
