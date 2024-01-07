@@ -15,14 +15,14 @@ const migrationManagerQueries: MigrationManagerQueries = {
   mssql: {
     insertMigrationQuery: 'INSERT INTO __AppMigrations([Name], [DateTime]) VALUES(@name, GETDATE())',
     lastMigrationDateQuery: 'SELECT TOP 1 [DateTime] FROM __AppMigrations ORDER BY [DateTime] DESC',
-    latestMigrationsQuery: 'SELECT * FROM __AppMigrations WHERE [DateTime] = @lastDateTime',
+    latestMigrationsQuery: 'SELECT * FROM __AppMigrations WHERE [DateTime] = @lastDateTime ORDER BY [Name] DESC',
     deleteMigrationQuery: 'DELETE FROM __AppMigrations WHERE [Name] = @name',
     existingMigrationsQuery: 'SELECT * FROM __AppMigrations'
   },
   mysql: {
     insertMigrationQuery: 'INSERT INTO __AppMigrations(`Name`, `DateTime`) VALUES(:name, NOW())',
-    lastMigrationDateQuery: 'SELECT TOP 1 `DateTime` FROM __AppMigrations ORDER BY `DateTime` DESC',
-    latestMigrationsQuery: 'SELECT * FROM __AppMigrations WHERE `DateTime` = :lastDateTime',
+    lastMigrationDateQuery: 'SELECT `DateTime` FROM __AppMigrations ORDER BY `DateTime` DESC LIMIT 1',
+    latestMigrationsQuery: 'SELECT * FROM __AppMigrations WHERE `DateTime` = :lastDateTime ORDER BY `Name` DESC',
     deleteMigrationQuery: 'DELETE FROM __AppMigrations WHERE `Name` = :name',
     existingMigrationsQuery: 'SELECT * FROM __AppMigrations'
   }
