@@ -334,10 +334,11 @@ export class MigrationCommand extends MigrationBase {
   }
 
   private _getCreateNotExistMySql() {
+    const constraints = this._createConstraintsSql();
     return `
         CREATE TABLE IF NOT EXISTS ${this._table} (
-          ${this._getCreateCols()},
-          ${this._createConstraintsSql()}
+          ${this._getCreateCols()}
+          ${constraints.length > 0 ? (',\n' + constraints) : ''}
         );
     `;
   }
